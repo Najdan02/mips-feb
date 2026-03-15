@@ -25,9 +25,34 @@
 
 TimerHandle_t ledTimer;
 
+static uint32_t tempValue;
+
 static void homeworkTask(void *parameters)
 {
-	
+	UNUSED(parameters);
+	char messageTemp[9] = "Temp:   ";
+
+	for (uint32_t i = 0; i < 8; i++) {
+	    UART_AsyncTransmitCharacter(messageTemp[i]);
+	}
+	vTaskDelay(pdMS_TO_TICKS(50));  /* Yield so UART_TransmitTask (prio 6) can drain queue */
+
+	while (1) {
+		tempValue = (uint32_t)TEMP_GetCurrentValue();
+		if (tempValue > 60) tempValue = 60;
+
+		UART_AsyncTransmitCharacter('\b');
+		UART_AsyncTransmitCharacter('\b');
+
+		if (tempValue < 10) {
+		    UART_AsyncTransmitCharacter(' ');
+		} else {
+		    UART_AsyncTransmitCharacter(tempValue / 10 + '0');
+		}
+		UART_AsyncTransmitCharacter(tempValue % 10 + '0');
+
+		vTaskDelay(pdMS_TO_TICKS(200));
+	}
 }
 
 void ledCounter(TimerHandle_t xTimer) {
@@ -43,7 +68,10 @@ void ledCounter(TimerHandle_t xTimer) {
 
 void homeworkInit()
 {
+	LCD_Init();
+	UART_Init();
 	TEMP_Init();
+	xTaskCreate(homeworkTask, "homeworkTask", 128, NULL, 5, NULL);
 	ledTimer = xTimerCreate ("ledTimer", pdMS_TO_TICKS(500), pdTRUE, NULL, ledCounter);
 	xTimerStart(ledTimer, portMAX_DELAY);
 }
