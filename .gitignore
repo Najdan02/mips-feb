@@ -1,0 +1,21 @@
+ 
+# build folders
+build/
+**/build/
+
+# compiled outputs
+*.o
+*.d
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+
+# eclipse temporary build folders
+Debug/
+Release/
+
+# OS junk
+Thumbs.db
+Desktop.ini
