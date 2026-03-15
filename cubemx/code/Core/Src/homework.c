@@ -27,10 +27,21 @@ TimerHandle_t ledTimer;
 
 static uint32_t tempValue;
 
+static unsigned rainfall = 0;
+static unsigned passedMs = 1;
+static TimerHandle_t homeworkTimer;
+static char tempText[4];
+
+
 static void homeworkTask(void *parameters)
 {
 	UNUSED(parameters);
 	char messageTemp[9] = "Temp:   ";
+	char messageKisa[7] = "Kisa: ";
+
+	for (uint32_t i = 0; i < 6; i++) {
+	    LCD_CommandEnqueue(LCD_DATA, messageKisa[i]);
+	}
 
 	for (uint32_t i = 0; i < 8; i++) {
 	    UART_AsyncTransmitCharacter(messageTemp[i]);
@@ -51,8 +62,29 @@ static void homeworkTask(void *parameters)
 		}
 		UART_AsyncTransmitCharacter(tempValue % 10 + '0');
 
+		itoa(rainfall, tempText, 10);
+
+		LCD_CommandEnqueue(LCD_INSTRUCTION, LCD_SET_DD_RAM_ADDRESS_INSTRUCTION | 0x06);
+
+		for (uint32_t i = 0; i < strlen(tempText); i++) {
+		    LCD_CommandEnqueue(LCD_DATA, tempText[i]);
+		}
+
 		vTaskDelay(pdMS_TO_TICKS(200));
 	}
+}
+
+void homeworkOverflow(void) {
+	if (passedMs > 0) {
+		/* Ceiling division: round up to avoid "1 less" from truncation */
+		rainfall = (36000 + passedMs - 1) / passedMs;
+	}
+	passedMs = 0;
+}
+
+void homeworkCounter(TimerHandle_t xTimer) {
+    UNUSED(xTimer);
+    ++passedMs;
 }
 
 void ledCounter(TimerHandle_t xTimer) {
@@ -72,6 +104,8 @@ void homeworkInit()
 	UART_Init();
 	TEMP_Init();
 	xTaskCreate(homeworkTask, "homeworkTask", 128, NULL, 5, NULL);
+	homeworkTimer = xTimerCreate("homeworkTimer", pdMS_TO_TICKS(1), pdTRUE, NULL, homeworkCounter);
+	xTimerStart(homeworkTimer, portMAX_DELAY);
 	ledTimer = xTimerCreate ("ledTimer", pdMS_TO_TICKS(500), pdTRUE, NULL, ledCounter);
 	xTimerStart(ledTimer, portMAX_DELAY);
 }
