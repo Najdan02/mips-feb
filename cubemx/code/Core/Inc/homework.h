@@ -10,8 +10,4 @@
 
 extern void homeworkInit();
 
-extern void ledCounter();
-
-extern void homeworkOverflow(void);
-
 #endif /* CORE_INC_HOMEWORK_H_ */
